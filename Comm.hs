@@ -1,12 +1,9 @@
---
--- Copyright (c) 2018 Ibraheem Moosa
--- GPL version 2 or later (see http://www.gnu.org/copyleft/gpl.html)
---
 import System.Environment
+import System.IO
 
 main :: IO ()
 main = do
-        input <- getLine
-        putStrLn input
-
-
+        fileName <- getLine
+        handle <- openFile fileName ReadMode
+        contents <- hGetContents handle
+        putStr contents
