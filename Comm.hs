@@ -11,7 +11,73 @@ main = do
         let (firstUnique, secondUnique, common) = extractCommonAndUnique (lines firstFileContents) (lines secondFileContents)
 --        rs <- sequence $ map putStrLn $ reverse $ common
 --        print rs
-        mapM_ putStrLn common
+--        mapM_ putStrLn common
+        printComm (firstUnique, secondUnique, common) 
+
+printComm :: ([String], [String], [String]) -> IO ()
+
+printComm ([], [], []) =
+    return ()
+
+printComm (a:as, [], []) =
+    do
+        putStrLn a
+        printComm (as, [], [])
+
+printComm ([], b:bs, []) =
+    do
+        putStrLn $ "\t\t" ++ b
+        printComm ([], bs, [])
+
+printComm ([], [], c:cs) =
+    do
+        putStrLn $ "\t\t\t\t" ++ c
+        printComm ([], [], cs)
+
+printComm (a:as, b:bs, [])
+    | (a < b) =
+        do
+            putStrLn $ a
+            printComm (as, b:bs, [])
+    | otherwise =
+        do
+            putStrLn $ "\t\t" ++ b
+            printComm (a:as, bs, [])
+        
+
+printComm (a:as, [], c:cs)
+    | (a < c) =
+        do
+            putStrLn $ a
+            printComm (as, [], c:cs)
+    | otherwise =
+        do
+            putStrLn $ "\t\t\t\t" ++ c
+            printComm (a:as, [], cs)
+
+printComm ([], b:bs, c:cs)
+    | (b < c) =
+        do
+            putStrLn $ "\t\t" ++ b
+            printComm ([], bs, c:cs)
+    | otherwise =
+        do
+            putStrLn $ "\t\t\t\t" ++ c
+            printComm ([], b:bs, cs)
+
+printComm (a:as, b:bs, c:cs)
+    | (&&) (a < b) (b < c) = 
+        do
+            putStrLn $ a
+            printComm (as, b:bs, c:cs)
+    | (&&) (b < c) (c < a) =
+        do
+            putStrLn $ "\t\t" ++ b
+            printComm (a:as, bs, c:cs)
+    | otherwise =
+        do
+            putStrLn $ "\t\t\t\t" ++ c
+            printComm (a:as, b:bs, cs)
 
 extractCommonAndUnique a [] = (a, [], [])
 extractCommonAndUnique [] b = ([], b, [])
