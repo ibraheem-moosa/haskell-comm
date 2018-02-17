@@ -4,15 +4,21 @@ import System.IO
 main :: IO ()
 main = do
         args <- getArgs
-        firstFileHandle <- openFile (args !! 0) ReadMode
-        secondFileHandle <- openFile (args !! 1) ReadMode
+        let argLength = length args
+        let configuration = extractConfigurationFromArgs $ take (argLength - 2) args
+        firstFileHandle <- openFile (last $ init args) ReadMode
+        secondFileHandle <- openFile (last args) ReadMode
         firstFileContents <- hGetContents firstFileHandle
         secondFileContents <- hGetContents secondFileHandle
         let (firstUnique, secondUnique, common) = extractCommonAndUnique (lines firstFileContents) (lines secondFileContents)
---        rs <- sequence $ map putStrLn $ reverse $ common
---        print rs
---        mapM_ putStrLn common
-        printComm (firstUnique, secondUnique, common) 
+        let a = if elem '1' configuration then [] else firstUnique 
+        let b = if elem '2' configuration then [] else secondUnique 
+        let c = if elem '3' configuration then [] else common
+        printComm (a, b, c) 
+
+
+extractConfigurationFromArgs :: [String] -> String
+extractConfigurationFromArgs args = foldl (++) "" $ map tail $ filter (\x -> head x == '-') args
 
 printComm :: ([String], [String], [String]) -> IO ()
 
