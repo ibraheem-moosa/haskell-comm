@@ -44,10 +44,13 @@ extractConfigurationFromArgs args =
         | char `elem` argStr = val : rest
         | otherwise     = rest
     argStr =
-        concat
-            $ map tail
-            $ filter (\x -> head x == '-')
-            $ args
+        foldr 
+            (\str acc -> case str of
+                ('-' : rest) -> rest ++ acc
+                _ -> acc
+            )
+            []
+            args
 
 data CommonOrUnique = FirstUnique | SecondUnique | Common
     deriving Eq
