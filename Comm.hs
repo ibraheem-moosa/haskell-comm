@@ -1,5 +1,7 @@
 import System.Environment
 import System.IO
+import Data.Maybe
+
 
 main :: IO ()
 main = do
@@ -14,76 +16,55 @@ main = do
         let a = if elem '1' configuration then [] else firstUnique 
         let b = if elem '2' configuration then [] else secondUnique 
         let c = if elem '3' configuration then [] else common
-        printComm (a, b, c) 
+        printComm '\t' (a, b, c)
 
 
 extractConfigurationFromArgs :: [String] -> String
 extractConfigurationFromArgs args = foldl (++) "" $ map tail $ filter (\x -> head x == '-') args
 
-printComm :: ([String], [String], [String]) -> IO ()
 
-printComm ([], [], []) =
-    return ()
+-- safe version of head
+getHead :: [a] -> Maybe a
 
-printComm (a:as, [], []) =
-    do
-        putStrLn a
-        printComm (as, [], [])
+getHead = listToMaybe
 
-printComm ([], b:bs, []) =
-    do
-        putStrLn $ "\t\t" ++ b
-        printComm ([], bs, [])
 
-printComm ([], [], c:cs) =
-    do
-        putStrLn $ "\t\t\t\t" ++ c
-        printComm ([], [], cs)
+-- checks if first parameter is less than second
+-- Nothing is considered greater than any Just value
+lessthanWithNothing :: (Ord a) => (Maybe a) -> (Maybe a) -> (Maybe Bool)
 
-printComm (a:as, b:bs, [])
-    | (a < b) =
-        do
-            putStrLn $ a
-            printComm (as, b:bs, [])
-    | otherwise =
-        do
-            putStrLn $ "\t\t" ++ b
-            printComm (a:as, bs, [])
-        
+lessthanWithNothing Nothing Nothing = Nothing
+lessthanWithNothing (Just a) Nothing = Just True
+lessthanWithNothing Nothing (Just b) = Just False
+lessthanWithNothing (Just a) (Just b) = Just (a < b)
 
-printComm (a:as, [], c:cs)
-    | (a < c) =
-        do
-            putStrLn $ a
-            printComm (as, [], c:cs)
-    | otherwise =
-        do
-            putStrLn $ "\t\t\t\t" ++ c
-            printComm (a:as, [], cs)
 
-printComm ([], b:bs, c:cs)
-    | (b < c) =
-        do
-            putStrLn $ "\t\t" ++ b
-            printComm ([], bs, c:cs)
-    | otherwise =
-        do
-            putStrLn $ "\t\t\t\t" ++ c
-            printComm ([], b:bs, cs)
+andWithNothing :: (Maybe Bool) -> (Maybe Bool) -> Bool
 
-printComm (a:as, b:bs, c:cs)
-    | (&&) (a < b) (b < c) = 
-        do
-            putStrLn $ a
-            printComm (as, b:bs, c:cs)
-    | (&&) (b < c) (c < a) =
-        do
-            putStrLn $ "\t\t" ++ b
-            printComm (a:as, bs, c:cs)
-    | otherwise =
-        do
-            putStrLn $ "\t\t\t\t" ++ c
-            printComm (a:as, b:bs, cs)
+andWithNothing a b = (fromMaybe False a) && (fromMaybe False b)
+
+
+minHeadOfThreeLists :: (Ord a) => ([a], [a], [a]) -> Maybe (a, Int, ([a], [a], [a]))
+
+minHeadOfThreeLists (a, b, c)
+    | andWithNothing (lessthanWithNothing ah bh) (lessthanWithNothing ah ch) = Just (head a, 0, (tail a, b, c))
+    | andWithNothing (lessthanWithNothing bh ah) (lessthanWithNothing bh ch) = Just (head b, 1, (a, tail b, c))
+    | andWithNothing (lessthanWithNothing ch bh) (lessthanWithNothing ch bh) = Just (head c, 2, (a, b, tail c))
+    | otherwise = Nothing
+    where (ah, bh, ch) = (getHead a, getHead b, getHead c)
+
+
+printComm :: Char -> ([String], [String], [String]) -> IO ()
+
+printComm delimiter lists =
+        case minHeadOfThreeLists lists of Nothing -> do
+                                                        return ()
+                                          Just (h, i, next) -> do
+                                                                  putStrLn $ (replicate i delimiter) ++ h
+                                                                  printComm delimiter next
+
+
+extractCommonAndUnique :: (Ord a) => [a] -> [a] -> ([a], [a], [a])
 
 extractCommonAndUnique a [] = (a, [], [])
 extractCommonAndUnique [] b = ([], b, [])
@@ -95,6 +76,8 @@ extractCommonAndUnique (a:as) (b:bs)
         (aRest1, bRest1, cRest1) = extractCommonAndUnique as (b:bs)
         (aRest2, bRest2, cRest2) = extractCommonAndUnique (a:as) bs
         (aRest3, bRest3, cRest3) = extractCommonAndUnique as bs
+
+
 {-
 extractCommonAndUnique list1 list2 = extractCommonAndUniqueHelper list1 list2 ([], [], [])
 
