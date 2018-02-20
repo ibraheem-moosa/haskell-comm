@@ -5,7 +5,7 @@ import Data.Maybe
 main :: IO ()
 main = do
     args <- getArgs
-    (flags, firstFile, secondFile) <- 
+    (flags, firstFile, secondFile) <-
         case reverse args of
             secondFile : firstFile : flags ->
                 return (flags, firstFile, secondFile)
@@ -16,40 +16,67 @@ main = do
     firstFileContents <- hGetContents firstFileHandle
     secondFileContents <- hGetContents secondFileHandle
     let configuration = extractConfigurationFromArgs flags
-    let a = elem '1' configuration
-    let b = elem '2' configuration
-    let c = elem '3' configuration
-    printComm '\t' (a, b, c)
+    printComm '\t' configuration
         $ extractCommonAndUnique
             (lines firstFileContents)
             (lines secondFileContents)
 
-extractConfigurationFromArgs :: [String] -> String
+data Config = Config
+    { configOmissions :: [CommonOrUnique]
+    }
+
+shouldOmit :: CommonOrUnique -> Config -> Bool
+shouldOmit cou cfg = cou `elem` configOmissions cfg
+
+omitFirstUnique :: Config -> Bool
+omitFirstUnique = shouldOmit FirstUnique
+
+omitSecondUnique :: Config -> Bool
+omitSecondUnique = shouldOmit SecondUnique
+
+omitCommon :: Config -> Bool
+omitCommon = shouldOmit Common
+
+extractConfigurationFromArgs :: [String] -> Config
 extractConfigurationFromArgs args =
-    foldl (++) ""
-        $ map tail
-        $ filter (\x -> head x == '-')
-        $ args
+    Config
+        { configOmissions =
+            foldr addIf []
+                [ ('1', FirstUnique)
+                , ('2', SecondUnique)
+                , ('3', Common)
+                ]
+        }
+  where
+    addIf (char, val) rest
+        | char `elem` argStr = val : rest
+        | otherwise     = rest
+    argStr =
+        concat
+            $ map tail
+            $ filter (\x -> head x == '-')
+            $ args
 
 data CommonOrUnique = FirstUnique | SecondUnique | Common
+    deriving Eq
 
-printComm :: Char -> (Bool, Bool, Bool) -> [(String, CommonOrUnique)] -> IO ()
+printComm :: Char -> Config -> [(String, CommonOrUnique)] -> IO ()
 printComm _ _ [] = return ()
-printComm delimiter omit@(omitFirstUnique, _, _) ((a, FirstUnique):as) = do
-    if omitFirstUnique
+printComm delimiter cfg ((a, FirstUnique):as) = do
+    if omitFirstUnique cfg
         then return ()
         else putStrLn $ (replicate 0 delimiter) ++ a
-    printComm delimiter omit as
-printComm delimiter omit@(_, omitSecondUnique, _) ((a, SecondUnique):as) = do
-    if omitSecondUnique
+    printComm delimiter cfg as
+printComm delimiter cfg ((a, SecondUnique):as) = do
+    if omitSecondUnique cfg
         then return ()
         else putStrLn $ (replicate 1 delimiter) ++ a
-    printComm delimiter omit as
-printComm delimiter omit@(_, _, omitCommon) ((a, Common):as) = do
-    if omitCommon
+    printComm delimiter cfg as
+printComm delimiter cfg ((a, Common):as) = do
+    if omitCommon cfg
         then return ()
         else putStrLn $ (replicate 2 delimiter) ++ a
-    printComm delimiter omit as
+    printComm delimiter cfg as
 
 extractCommonAndUnique :: (Ord a) => [a] -> [a] -> [(a, CommonOrUnique)]
 extractCommonAndUnique a [] = map (\x -> (x, FirstUnique)) a
@@ -57,4 +84,4 @@ extractCommonAndUnique [] b = map (\x -> (x, SecondUnique)) b
 extractCommonAndUnique (a:as) (b:bs)
     | a < b     = (a, FirstUnique)  : extractCommonAndUnique as (b:bs)
     | a > b     = (b, SecondUnique) : extractCommonAndUnique (a:as) bs
-    | otherwise = (a, Common)   : extractCommonAndUnique as bs
+    | otherwise = (a, Common)       : extractCommonAndUnique as bs
