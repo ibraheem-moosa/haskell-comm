@@ -60,8 +60,10 @@ commOrUniqToColumn cou =
         Common ->  2
 
 printComm :: Char -> Config -> [(String, CommonOrUnique)] -> IO ()
-printComm delimiter cfg xs =
-    mapM_ putStrLn (map renderLine (filter (not . omitted) xs))
+printComm delimiter cfg =
+    mapM_ putStrLn 
+        . map renderLine 
+        . filter (not . omitted)
   where
     omitted (_, cou) = shouldOmit cou cfg
     renderLine (a, cou) = replicate (commOrUniqToColumn cou) delimiter ++ a
