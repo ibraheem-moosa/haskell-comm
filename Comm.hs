@@ -12,15 +12,15 @@ main = do
                 return (flags, firstFile, secondFile)
             _ ->
                 error "Usage: comm -[123] firstFile secondFile"
-    firstFileHandle <- openFile firstFile ReadMode
-    secondFileHandle <- openFile secondFile ReadMode
-    firstFileContents <- hGetContents firstFileHandle
-    secondFileContents <- hGetContents secondFileHandle
-    let configuration = extractConfigurationFromArgs flags
-    printComm '\t' configuration
-        $ extractCommonAndUnique
-            (lines firstFileContents)
-            (lines secondFileContents)
+    withFile firstFile ReadMode $ \firstFileHandle -> do
+        withFile secondFile ReadMode $ \secondFileHandle -> do
+            firstFileContents <- hGetContents firstFileHandle
+            secondFileContents <- hGetContents secondFileHandle
+            let configuration = extractConfigurationFromArgs flags
+            printComm '\t' configuration
+                $ extractCommonAndUnique
+                    (lines firstFileContents)
+                    (lines secondFileContents)
 
 data Config = Config
     { configOmissions :: [CommonOrUnique]
