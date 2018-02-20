@@ -28,15 +28,6 @@ data Config = Config
 shouldOmit :: CommonOrUnique -> Config -> Bool
 shouldOmit cou cfg = cou `elem` configOmissions cfg
 
-omitFirstUnique :: Config -> Bool
-omitFirstUnique = shouldOmit FirstUnique
-
-omitSecondUnique :: Config -> Bool
-omitSecondUnique = shouldOmit SecondUnique
-
-omitCommon :: Config -> Bool
-omitCommon = shouldOmit Common
-
 extractConfigurationFromArgs :: [String] -> Config
 extractConfigurationFromArgs args =
     Config
@@ -60,22 +51,19 @@ extractConfigurationFromArgs args =
 data CommonOrUnique = FirstUnique | SecondUnique | Common
     deriving Eq
 
+commOrUniqToColumn :: CommonOrUnique -> Int
+commOrUniqToColumn cou =
+    case cou of
+        FirstUnique -> 0
+        SecondUnique -> 1
+        Common ->  2
+
 printComm :: Char -> Config -> [(String, CommonOrUnique)] -> IO ()
 printComm _ _ [] = return ()
-printComm delimiter cfg ((a, FirstUnique):as) = do
-    if omitFirstUnique cfg
+printComm delimiter cfg ((a, cou):as) = do
+    if shouldOmit cou cfg
         then return ()
-        else putStrLn $ (replicate 0 delimiter) ++ a
-    printComm delimiter cfg as
-printComm delimiter cfg ((a, SecondUnique):as) = do
-    if omitSecondUnique cfg
-        then return ()
-        else putStrLn $ (replicate 1 delimiter) ++ a
-    printComm delimiter cfg as
-printComm delimiter cfg ((a, Common):as) = do
-    if omitCommon cfg
-        then return ()
-        else putStrLn $ (replicate 2 delimiter) ++ a
+        else putStrLn $ (replicate (commOrUniqToColumn cou) delimiter) ++ a
     printComm delimiter cfg as
 
 extractCommonAndUnique :: (Ord a) => [a] -> [a] -> [(a, CommonOrUnique)]
