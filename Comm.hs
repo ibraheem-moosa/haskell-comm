@@ -1,6 +1,7 @@
 import System.Environment
 import System.IO
 import Data.Maybe
+import Control.Monad (forM_)
 
 main :: IO ()
 main = do
@@ -59,12 +60,13 @@ commOrUniqToColumn cou =
         Common ->  2
 
 printComm :: Char -> Config -> [(String, CommonOrUnique)] -> IO ()
-printComm _ _ [] = return ()
-printComm delimiter cfg ((a, cou):as) = do
-    if shouldOmit cou cfg
-        then return ()
-        else putStrLn $ (replicate (commOrUniqToColumn cou) delimiter) ++ a
-    printComm delimiter cfg as
+printComm delimiter cfg xs =
+    mapM_ printItem xs 
+  where
+    printItem (a, cou) =
+        if shouldOmit cou cfg
+            then return ()
+            else putStrLn $ (replicate (commOrUniqToColumn cou) delimiter) ++ a
 
 extractCommonAndUnique :: (Ord a) => [a] -> [a] -> [(a, CommonOrUnique)]
 extractCommonAndUnique a [] = map (\x -> (x, FirstUnique)) a
