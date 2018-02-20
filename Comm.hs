@@ -5,13 +5,17 @@ import Data.Maybe
 main :: IO ()
 main = do
     args <- getArgs
-    let argLength = length args
-    firstFileHandle <- openFile (last $ init args) ReadMode
-    secondFileHandle <- openFile (last args) ReadMode
+    (flags, firstFile, secondFile) <- 
+        case reverse args of
+            secondFile : firstFile : flags ->
+                return (flags, firstFile, secondFile)
+            _ ->
+                error "Usage: comm -[123] firstFile secondFile"
+    firstFileHandle <- openFile firstFile ReadMode
+    secondFileHandle <- openFile secondFile ReadMode
     firstFileContents <- hGetContents firstFileHandle
     secondFileContents <- hGetContents secondFileHandle
-    let configuration = extractConfigurationFromArgs
-                      $ take (argLength - 2) args
+    let configuration = extractConfigurationFromArgs flags
     let a = elem '1' configuration
     let b = elem '2' configuration
     let c = elem '3' configuration
