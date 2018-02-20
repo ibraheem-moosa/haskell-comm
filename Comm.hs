@@ -61,12 +61,11 @@ commOrUniqToColumn cou =
 
 printComm :: Char -> Config -> [(String, CommonOrUnique)] -> IO ()
 printComm delimiter cfg xs =
-    mapM_ printItem xs 
+    mapM_ printItem (filter (not . omitted) xs)
   where
+    omitted (_, cou) = shouldOmit cou cfg
     printItem (a, cou) =
-        if shouldOmit cou cfg
-            then return ()
-            else putStrLn $ (replicate (commOrUniqToColumn cou) delimiter) ++ a
+        putStrLn $ (replicate (commOrUniqToColumn cou) delimiter) ++ a
 
 extractCommonAndUnique :: (Ord a) => [a] -> [a] -> [(a, CommonOrUnique)]
 extractCommonAndUnique a [] = map (\x -> (x, FirstUnique)) a
