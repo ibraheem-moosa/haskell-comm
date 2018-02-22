@@ -21,7 +21,7 @@ main = do
                 of Nothing -> '\t'
                    Just i -> head $ args !! (i + 1)
     printComm d
-        $ filter (\x -> not $ shouldOmitCommonOrUnique (a, b, c) $ (snd x))
+        $ filter (not . (shouldOmitCommonOrUnique (a, b, c)) . snd)
               $ extractCommonAndUnique
                     (lines firstFileContents)
                     (lines secondFileContents)
@@ -58,7 +58,7 @@ printComm delimiter =
     mapM_ (putStrLn . renderLine)
     where
         renderLine (a, commonOrUnique) =
-            replicate 
+            replicate
                 (commonOrUniqueToColumn commonOrUnique)
                 delimiter ++ a
 
