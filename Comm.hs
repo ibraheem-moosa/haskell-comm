@@ -20,10 +20,11 @@ main = do
     let d = case (elemIndex 'd' configuration)
                 of Nothing -> '\t'
                    Just i -> head $ args !! (i + 1)
-    printComm d (a, b, c)
-        $ extractCommonAndUnique
-            (lines firstFileContents)
-            (lines secondFileContents)
+    printComm d
+        $ filter (\x -> not $ shouldOmitCommonOrUnique (a, b, c) $  (snd x))
+              $ extractCommonAndUnique
+                    (lines firstFileContents)
+                    (lines secondFileContents)
 
 
 extractConfigurationFromArgs :: [String] -> String
@@ -51,19 +52,16 @@ commonOrUniqueToColumn SecondUnique = 1
 commonOrUniqueToColumn Common = 2
 
 
-printComm :: Char -> (Bool, Bool, Bool)
-                 -> [(String, CommonOrUnique)] -> IO ()
+printComm :: Char -> [(String, CommonOrUnique)] -> IO ()
 
-printComm _ _ [] = return ()
+printComm _ [] = return ()
 printComm delimiter
-    omitConfiguration ((a, commonOrUnique):as) = do
-    if shouldOmitCommonOrUnique omitConfiguration commonOrUnique
-        then return ()
-        else putStrLn
-                 $ (replicate
-                        (commonOrUniqueToColumn commonOrUnique)
-                        delimiter) ++ a
-    printComm delimiter omitConfiguration as
+    ((a, commonOrUnique):as) = do
+    putStrLn
+        $ (replicate
+              (commonOrUniqueToColumn commonOrUnique)
+              delimiter) ++ a
+    printComm delimiter as
 
 
 extractCommonAndUnique :: (Ord a) => [a] -> [a] -> [(a, CommonOrUnique)]
